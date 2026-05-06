@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Position = 0)]
     [ValidateSet("install", "uninstall")]
     [string]$Action = "install"
@@ -219,7 +219,7 @@ function Set-ClaudeLocale {
 
         $config | Add-Member -NotePropertyName "locale" -NotePropertyValue $Locale -Force
         $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
-        Write-Host "  locale=$Locale: $configPath" -ForegroundColor Green
+        Write-Host "  locale=${Locale}: $configPath" -ForegroundColor Green
     }
 }
 
