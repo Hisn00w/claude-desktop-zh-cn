@@ -44,8 +44,9 @@ sudo /usr/bin/python3 scripts/patch_claude_zh_cn.py --user-home "$HOME" --launch
 1. 退出 Claude Desktop。
 2. 下载或克隆本项目。
 3. 右键 `install-windows.bat`，选择以管理员身份运行。
-4. 脚本会写入本仓库 `resources` 目录里的中文 JSON，补齐硬编码界面文本，修复 3P gateway 模型名校验，并重启 Claude Desktop。
-5. 如果没有自动切换，打开左下角账号菜单，选择 `Language` -> `中文（中国）`。
+4. 在菜单中选择 `1` 安装中文补丁。
+5. 脚本会写入本仓库 `resources` 目录里的中文 JSON，补齐硬编码界面文本，修复 3P gateway 模型名校验，并重启 Claude Desktop。
+6. 如果没有自动切换，打开左下角账号菜单，选择 `Language` -> `中文（中国）`。
 
 也可以在 PowerShell 中运行：
 
@@ -72,7 +73,7 @@ chmod +x install-mac.command
 ## 文件说明
 
 - `install-mac.command`：macOS 双击运行入口。
-- `install-windows.bat`：Windows 双击 / 管理员运行入口。
+- `install-windows.bat`：Windows 安装 / 恢复菜单入口。
 - `scripts/install_windows.ps1`：Windows 汉化安装和卸载脚本。
 - `scripts/patch_claude_zh_cn.py`：真正执行补丁的 Python 脚本。
 - `resources/manifest.json`：语言包信息。
@@ -132,7 +133,9 @@ Claude.backup-before-zh-CN-20260424-120000.app
 
 如需恢复，可退出 Claude Desktop 后，将当前 `/Applications/Claude.app` 移走，再把备份 app 改名为 `Claude.app`。
 
-Windows 脚本安装时会把被修改的前端 JS bundle、`app.asar` 和 `Claude.exe` 备份到 Claude 安装目录下的 `resources\.zh-cn-backups`。运行：
+Windows 脚本安装时会把被修改的前端 JS bundle、`app.asar` 和 `Claude.exe` 备份到 Claude 安装目录下的 `resources\.zh-cn-backups`。如需恢复，退出 Claude Desktop 后，右键 `install-windows.bat`，选择以管理员身份运行，并在菜单中选择 `2`。
+
+也可以在 PowerShell 中运行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_windows.ps1 uninstall
