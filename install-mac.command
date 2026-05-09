@@ -13,8 +13,28 @@ echo "Claude Desktop 中文补丁"
 echo "目录: $DIR"
 echo
 
+ACTION="${CLAUDE_ACTION:-}"
+if [ -z "$ACTION" ]; then
+  echo "请选择操作："
+  echo "  [1] 安装中文补丁"
+  echo "  [2] 恢复原样 / 卸载补丁"
+  echo
+  read -rp "请输入选项 [1/2，默认 1]: " action_choice
+  case "${action_choice:-1}" in
+    2) ACTION="restore" ;;
+    *) ACTION="install" ;;
+  esac
+  echo
+fi
+
+if [ "$ACTION" = "uninstall" ]; then
+  ACTION="restore"
+fi
+
 # Language selection
-if [ -z "${CLAUDE_LANG:-}" ]; then
+if [ "$ACTION" = "restore" ]; then
+  LANG_CODE=""
+elif [ -z "${CLAUDE_LANG:-}" ]; then
   echo "请选择要安装的语言："
   echo "  [1] 简体中文"
   echo "  [2] 繁体中文（中国台湾）"
@@ -31,14 +51,20 @@ else
   LANG_CODE="$CLAUDE_LANG"
 fi
 
-echo "选择的语言: $LANG_CODE"
-echo
+if [ "$ACTION" != "restore" ]; then
+  echo "选择的语言: $LANG_CODE"
+  echo
+fi
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "需要管理员权限来替换 /Applications/Claude.app。"
   echo "请按提示输入这台 Mac 的登录密码。"
   echo
-  sudo "$PYTHON" "$PATCHER" --user-home "$HOME" --lang "$LANG_CODE" --launch "$@"
+  if [ "$ACTION" = "restore" ]; then
+    sudo "$PYTHON" "$PATCHER" --user-home "$HOME" --restore --launch "$@"
+  else
+    sudo "$PYTHON" "$PATCHER" --user-home "$HOME" --lang "$LANG_CODE" --launch "$@"
+  fi
   STATUS=$?
   echo
   echo "按回车退出。"
@@ -51,7 +77,11 @@ if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
   USER_HOME="/Users/$SUDO_USER"
 fi
 
-"$PYTHON" "$PATCHER" --user-home "$USER_HOME" --lang "$LANG_CODE" --launch "$@"
+if [ "$ACTION" = "restore" ]; then
+  "$PYTHON" "$PATCHER" --user-home "$USER_HOME" --restore --launch "$@"
+else
+  "$PYTHON" "$PATCHER" --user-home "$USER_HOME" --lang "$LANG_CODE" --launch "$@"
+fi
 
 echo
 echo "完成。按回车退出。"

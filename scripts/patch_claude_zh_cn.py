@@ -35,6 +35,7 @@ from typing import Any
 APP_DEFAULT = Path("/Applications/Claude.app")
 ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "resources"
+BACKUP_GLOB = "Claude.backup-before-zh-CN-*.app"
 
 APP_ASAR_REL = Path("Contents/Resources/app.asar")
 FRONTEND_I18N_REL = Path("Contents/Resources/ion-dist/i18n")
@@ -747,6 +748,56 @@ def backup_and_replace(original: Path, patched: Path, dry_run: bool) -> Path:
     return backup
 
 
+def remove_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+
+
+def find_app_backups(app: Path) -> list[Path]:
+    return sorted(path for path in app.parent.glob(BACKUP_GLOB) if path.is_dir())
+
+
+def restore_oldest_backup(app: Path, dry_run: bool) -> Path:
+    backups = find_app_backups(app)
+    if not backups:
+        raise SystemExit(f"No Claude backup found in {app.parent}: {BACKUP_GLOB}")
+
+    backup = backups[0]
+    extra_backups = backups[1:]
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    current_tmp = app.with_name(f"Claude.restore-current-{stamp}.app")
+
+    if dry_run:
+        if app.exists():
+            print(f"[dry-run] Would move current app {app} -> {current_tmp}")
+        print(f"[dry-run] Would restore oldest backup {backup} -> {app}")
+        for extra_backup in extra_backups:
+            print(f"[dry-run] Would delete extra backup: {extra_backup}")
+        return backup
+
+    if app.exists():
+        print(f"Moving current app aside: {current_tmp}")
+        shutil.move(str(app), str(current_tmp))
+
+    try:
+        print(f"Restoring oldest backup: {backup}")
+        shutil.move(str(backup), str(app))
+    except Exception:
+        if current_tmp.exists() and not app.exists():
+            shutil.move(str(current_tmp), str(app))
+        raise
+
+    if current_tmp.exists():
+        print(f"Removing replaced app: {current_tmp}")
+        remove_path(current_tmp)
+    for extra_backup in extra_backups:
+        print(f"Deleting extra backup: {extra_backup}")
+        remove_path(extra_backup)
+    return backup
+
+
 def verify(app: Path, lang_code: str) -> None:
     frontend = app / FRONTEND_I18N_REL / f"{lang_code}.json"
     data = load_json(frontend)
@@ -780,7 +831,31 @@ def main() -> int:
     parser.add_argument("--lang", choices=["zh-CN", "zh-TW", "zh-HK"], default="zh-CN", help="Language code to install (default: zh-CN)")
     parser.add_argument("--dry-run", action="store_true", help="Prepare and verify a patched temp app, but do not replace /Applications/Claude.app")
     parser.add_argument("--launch", action="store_true", help="Launch Claude after installation")
+    parser.add_argument("--restore", action="store_true", help="Restore the oldest macOS app backup and delete other backups")
     args = parser.parse_args()
+
+    try:
+        in_applications = args.app.resolve().as_posix().startswith("/Applications/")
+    except Exception:
+        in_applications = str(args.app).startswith("/Applications/")
+    if os.geteuid() != 0 and in_applications:
+        print("This usually needs sudo because /Applications is protected.", file=sys.stderr)
+
+    if args.restore:
+        if args.dry_run:
+            print("[dry-run] Claude will not be quit.")
+        else:
+            quit_claude()
+        restored = restore_oldest_backup(args.app, args.dry_run)
+        if args.dry_run:
+            print(f"[dry-run] Would set Claude config locale under: {args.user_home} to en-US")
+        else:
+            set_user_locale(args.user_home, "en-US")
+            print(f"Restored from backup: {restored}")
+            if args.launch:
+                run(["open", "-a", str(args.app)], check=False)
+        print("Done. Claude Desktop has been restored to the oldest backup.")
+        return 0
 
     lang_code = args.lang
     config = get_language_config(lang_code)
@@ -792,13 +867,6 @@ def main() -> int:
     if not args.app.exists():
         raise SystemExit(f"Claude.app not found: {args.app}")
     require_virtualization_entitlement(args.app)
-
-    try:
-        in_applications = args.app.resolve().as_posix().startswith("/Applications/")
-    except Exception:
-        in_applications = str(args.app).startswith("/Applications/")
-    if os.geteuid() != 0 and in_applications:
-        print("This usually needs sudo because /Applications is protected.", file=sys.stderr)
 
     if args.dry_run:
         print("[dry-run] Claude will not be quit.")

@@ -30,8 +30,8 @@ macOS 可双击 `install-mac.command`，Windows 可右键管理员运行 `instal
 
 1. 退出 Claude Desktop。
 2. 下载或克隆本项目。
-3. 双击 `install-mac.command`。
-4. 选择要安装的语言（1=简体中文，2=繁体中文（中国台湾），3=繁体中文（中国香港））。
+3. 双击 `install-mac.command`，选择安装中文补丁或恢复原样 / 卸载补丁。
+4. 安装时选择要安装的语言（1=简体中文，2=繁体中文（中国台湾），3=繁体中文（中国香港））。
 5. 按提示输入 Mac 登录密码。
 6. Claude 会自动重新打开。
 7. 如果没有自动切换，打开左下角账号菜单，选择 `Language` -> 对应的中文选项。
@@ -46,6 +46,8 @@ sudo /usr/bin/python3 scripts/patch_claude_zh_cn.py --user-home "$HOME" --lang z
 sudo /usr/bin/python3 scripts/patch_claude_zh_cn.py --user-home "$HOME" --lang zh-TW --launch
 # 繁体中文（中国香港）
 sudo /usr/bin/python3 scripts/patch_claude_zh_cn.py --user-home "$HOME" --lang zh-HK --launch
+# 恢复原样 / 卸载补丁
+sudo /usr/bin/python3 scripts/patch_claude_zh_cn.py --user-home "$HOME" --restore --launch
 ```
 
 ### Windows
@@ -102,8 +104,9 @@ chmod +x install-mac.command
 
 ## macOS 脚本会做什么
 
-- 备份当前 `/Applications/Claude.app` 到同目录，名字类似：
+- 安装时备份当前 `/Applications/Claude.app` 到同目录，名字类似：
   `Claude.backup-before-zh-CN-20260424-120000.app`
+- 恢复 / 卸载时选择同目录下最早的 `Claude.backup-before-zh-CN-*.app` 恢复为 `/Applications/Claude.app`，并删除其他备份。
 - 复制 Claude.app 到临时目录并打补丁。
 - 给前端语言白名单加入当前选择的中文变体。
 - 对 `Contents/Resources/app.asar` 做等长补丁，关闭 3P gateway 启动阶段的 `inferenceModels` Anthropic 名称校验。
