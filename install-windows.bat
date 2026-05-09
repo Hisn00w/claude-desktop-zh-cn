@@ -3,15 +3,14 @@ chcp 65001 >nul 2>&1
 
 if "%CLAUDE_ZH_ELEVATED%"=="1" goto elevated
 
-echo Requesting administrator privileges...
+echo 正在请求管理员权限...
 set "CLAUDE_ZH_DIR=%~dp0"
 set "CLAUDE_ZH_BAT=%~nx0"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $q=[char]34; $dir=$env:CLAUDE_ZH_DIR; $bat=$env:CLAUDE_ZH_BAT; $cmd='/k set ' + $q + 'CLAUDE_ZH_ELEVATED=1' + $q + ' && pushd ' + $q + $dir + $q + ' && call ' + $q + $bat + $q; Start-Process -FilePath 'cmd.exe' -ArgumentList $cmd -Verb RunAs -ErrorAction Stop; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
 if errorlevel 1 (
     echo.
-    echo Failed to request administrator privileges.
-    echo If you cancelled UAC, please run this script again.
-    echo.
+    echo 请求管理员权限失败。
+    echo 如果你取消了 UAC 授权，请重新运行此脚本。
     pause
     exit /b 1
 )
@@ -23,9 +22,8 @@ set "CLAUDE_ZH_ELEVATED="
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
-    echo Failed to obtain administrator privileges.
-    echo Please right-click this file and choose "Run as administrator".
-    echo.
+    echo 未能获得管理员权限。
+    echo 请右键此文件并选择“以管理员身份运行”。
     pause
     exit /b 1
 )
